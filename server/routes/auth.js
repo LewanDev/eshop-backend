@@ -4,48 +4,50 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import Client from "../models/Client.js";
 import verifyToken from "../middleware/verifyToken.js";
+import { register } from "../controllers/auth.js";
 
 const router = express.Router();
 
+router.post("/register", register);
 //POST Register
-router.post("/register", async (req, res) => {
-  try {
-    const newUser = new User({
-      email: req.body.email,
-      password: req.body.password,
-    });
+// router.post("/register", async (req, res) => {
+//   try {
+//     const newUser = new User({
+//       email: req.body.email,
+//       password: req.body.password,
+//     });
 
-    const savedUser = await newUser.save();
+//     const savedUser = await newUser.save();
 
-    const newClient = new Client({
-      user: savedUser._id,
-      name: "",
-      dni: "",
-      address: "",
-      phone: "",
-    });
+//     const newClient = new Client({
+//       user: savedUser._id,
+//       name: "",
+//       dni: "",
+//       address: "",
+//       phone: "",
+//     });
 
-    await newClient.save();
+//     await newClient.save();
 
-    // Actualizamos el user con la referencia al client
-    savedUser.client = newClient._id;
-    await savedUser.save();
+//     // Actualizamos el user con la referencia al client
+//     savedUser.client = newClient._id;
+//     await savedUser.save();
 
-    const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
-      expiresIn: "1d",
-    });
+//     const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
+//       expiresIn: "1d",
+//     });
 
-    res.status(201).json({
-      token,
-      msg: "Usuario y cliente creados correctamente",
-      user: savedUser,
-      client: newClient,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ msg: "Error al registrar usuario y cliente" });
-  }
-});
+//     res.status(201).json({
+//       token,
+//       msg: "Usuario y cliente creados correctamente",
+//       user: savedUser,
+//       client: newClient,
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ msg: "Error al registrar usuario y cliente" });
+//   }
+// });
 
 //POST Login
 router.post("/login", async (req, res) => {
