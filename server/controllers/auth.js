@@ -1,4 +1,5 @@
-import User from "../models/User.js"; // Ajusta según tu modelo
+import User from "../models/User.js";
+import Client from "../models/Client.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
