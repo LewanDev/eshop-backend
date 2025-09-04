@@ -47,41 +47,6 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// //POST Register
-// router.post("/register", async (req, res) => {
-//   try {
-//     const newUser = new User({
-//       email: req.body.email,
-//       password: req.body.password,
-//     });
-
-//     const savedUser = await newUser.save();
-
-//     const newClient = new Client({
-//       user: savedUser._id,
-//       name: "",
-//       dni: "",
-//       address: "",
-//       phone: "",
-//     });
-
-//     await newClient.save();
-//     const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
-//       expiresIn: "1d",
-//     });
-
-//     res.status(201).json({
-//       token,
-//       msg: "Usuario y cliente creados correctamente",
-//       user: savedUser,
-//       client: newClient,
-//     });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ msg: "Error al registrar usuario y cliente" });
-//   }
-// });
-
 //POST Login
 router.post("/login", async (req, res) => {
   try {
@@ -128,8 +93,6 @@ router.post("/login", async (req, res) => {
 //GET /api/auth/profile
 router.get("/profile", verifyToken, async (req, res) => {
   try {
-    //const user = await User.findById(req.userId).select("-password").populate("client");
-    //const user = await User.findById(req.userId).populate("client");
     const user = await User.findById(req.userId)
       .select("-password")
       .populate("client"); // ← populate!
