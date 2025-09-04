@@ -10,7 +10,7 @@ const app = express();
 
 // Configura CORS con una variable de entorno
 const allowedOrigins = [
-  process.env.FRONTEND_URL || "http://localhost:5000", // Fallback para desarrollo local
+  process.env.FRONTEND_URL || "http://localhost:5173", // Fallback para desarrollo local
   "https://eshop-frontend-woad.vercel.app", // Dominio de producción
 ];
 
@@ -19,6 +19,8 @@ app.use(
   cors({
     origin: (origin, callback) => {
       // Permitir solicitudes sin origen (como Postman) o desde orígenes permitidos
+      console.log("origin: " + origin);
+      console.log("allowed origin: " + allowedOrigins);
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, origin); // Devolver el origen exacto en lugar de '*'
       } else {
@@ -51,7 +53,7 @@ mongoose
     useUnifiedTopology: true,
   })
   .then(() => {
-    console.log("✅ Conectado a MongoDB");
-    app.listen(PORT, () => console.log(`Servidor en http://localhost:${PORT}`));
+    console.log("✅ Connected to MongoDB");
+    app.listen(PORT, () => console.log(`Server online`));
   })
-  .catch((err) => console.error("❌ Error al conectar MongoDB:", err));
+  .catch((err) => console.error("❌ Error when connecting MongoDB:", err));
