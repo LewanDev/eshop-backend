@@ -19,8 +19,6 @@ app.use(
   cors({
     origin: (origin, callback) => {
       // Permitir solicitudes sin origen (como Postman) o desde orígenes permitidos
-      console.log("origin: " + origin);
-      console.log("allowed origin: " + allowedOrigins);
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, origin); // Devolver el origen exacto en lugar de '*'
       } else {
