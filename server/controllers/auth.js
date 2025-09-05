@@ -45,11 +45,18 @@ export const register = async (req, res) => {
       expiresIn: "1d",
     });
 
+    await savedUser.populate("client"); // 🔑
+
+    // res.status(201).json({
+    //   token,
+    //   message: "Usuario y cliente creados correctamente",
+    //   user: savedUser,
+    //   client: newClient,
+    // });
     res.status(201).json({
       token,
       message: "Usuario y cliente creados correctamente",
       user: savedUser,
-      client: newClient,
     });
   } catch (error) {
     console.error(error);
@@ -72,12 +79,15 @@ export const login = async (req, res) => {
 
     // buscar usuario
     const user = await User.findOne({ email });
+    console.log("USUARIO DE LOGIN: " + user);
     if (!user) {
       return res.status(400).json({ message: "Usuario no encontrado" });
     }
 
+    
     // comparar contraseñas
     const isMatch = await bcrypt.compare(password, user.password);
+
     if (!isMatch) {
       return res.status(400).json({ message: "Contraseña incorrecta" });
     }
@@ -87,14 +97,21 @@ export const login = async (req, res) => {
       expiresIn: "1h",
     });
 
+    await user.populate("client"); // 🔑
+
     // responder sin exponer contraseña
+    // res.json({
+    //   message: "✅ Login exitoso",
+    //   user: {
+    //     id: user._id,
+    //     name: user.name,
+    //     email: user.email,
+    //   },
+    //   token,
+    // });
     res.json({
       message: "✅ Login exitoso",
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-      },
+      user,
       token,
     });
   } catch (error) {
@@ -106,28 +123,43 @@ export const login = async (req, res) => {
 //GET profile
 export const getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.userId)
-      .select("-password")
-      .populate("client"); // ← populate!
-    console.log("✨ USUARIO encontrado en backend:", user);
-
+    const user = await User.findById(req.userId).populate("client");
+    console.log("getProfile() - User: " + user);
     if (!user) {
       return res.status(404).json({ message: "Usuario no encontrado" });
     }
 
-    res.json({
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        client: user.client || {},
-      },
-    });
+    res.json({ user });
   } catch (error) {
-    console.error("❌ Error en /profile:", error);
-    res.status(500).json({ message: "Error en el servidor" });
+    console.error(error);
+    res.status(500).json({ message: "Error cargando perfil" });
   }
 };
+
+// export const getProfile = async (req, res) => {
+//   try {
+//     const user = await User.findById(req.userId)
+//       .select("-password")
+//       .populate("client"); // ← populate!
+//     console.log("✨ USUARIO encontrado en backend:", user);
+
+//     if (!user) {
+//       return res.status(404).json({ message: "Usuario no encontrado" });
+//     }
+
+//     res.json({
+//       user: {
+//         id: user._id,
+//         name: user.name,
+//         email: user.email,
+//         client: user.client || {},
+//       },
+//     });
+//   } catch (error) {
+//     console.error("❌ Error en /profile:", error);
+//     res.status(500).json({ message: "Error en el servidor" });
+//   }
+// };
 
 //PUT profile
 export const putProfile = async (req, res) => {
