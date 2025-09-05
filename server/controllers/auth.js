@@ -47,12 +47,6 @@ export const register = async (req, res) => {
 
     await savedUser.populate("client"); // 🔑
 
-    // res.status(201).json({
-    //   token,
-    //   message: "Usuario y cliente creados correctamente",
-    //   user: savedUser,
-    //   client: newClient,
-    // });
     res.status(201).json({
       token,
       message: "Usuario y cliente creados correctamente",
@@ -97,18 +91,8 @@ export const login = async (req, res) => {
       expiresIn: "1h",
     });
 
-    await user.populate("client"); // 🔑
+    await user.populate("client");
 
-    // responder sin exponer contraseña
-    // res.json({
-    //   message: "✅ Login exitoso",
-    //   user: {
-    //     id: user._id,
-    //     name: user.name,
-    //     email: user.email,
-    //   },
-    //   token,
-    // });
     res.json({
       message: "✅ Login exitoso",
       user,
@@ -135,31 +119,6 @@ export const getProfile = async (req, res) => {
     res.status(500).json({ message: "Error cargando perfil" });
   }
 };
-
-// export const getProfile = async (req, res) => {
-//   try {
-//     const user = await User.findById(req.userId)
-//       .select("-password")
-//       .populate("client"); // ← populate!
-//     console.log("✨ USUARIO encontrado en backend:", user);
-
-//     if (!user) {
-//       return res.status(404).json({ message: "Usuario no encontrado" });
-//     }
-
-//     res.json({
-//       user: {
-//         id: user._id,
-//         name: user.name,
-//         email: user.email,
-//         client: user.client || {},
-//       },
-//     });
-//   } catch (error) {
-//     console.error("❌ Error en /profile:", error);
-//     res.status(500).json({ message: "Error en el servidor" });
-//   }
-// };
 
 //PUT profile
 export const putProfile = async (req, res) => {
