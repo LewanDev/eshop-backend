@@ -1,5 +1,6 @@
 import User from "../models/User.js";
 import Client from "../models/Client.js";
+import Item from "../models/Item.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
@@ -156,6 +157,90 @@ export const putProfile = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Error en PUT /profile:", err);
+    res.status(500).json({ message: "Error en el servidor" });
+  }
+};
+
+
+
+// POST - postItem
+export const postItem = async (req, res) => {
+  try {
+    const {
+      code,
+      description,
+      composition,
+      barcode,
+      heading,
+      subheading,
+      proveedor,
+      salesUnit,
+      aliquot,
+      buyPrice,
+      discount1,
+      discount2,
+      discount3,
+      discount4,
+      discount5,
+      currency,
+      taxlessCost,
+      measure,
+      cost,
+      utility,
+      articleRanking,
+      enabled,
+      price1,
+      price2,
+      price3,
+      price4,
+      price5,
+    } = req.body;
+
+    // Verificar que no exista ya un item con ese code
+    const existingItem = await Item.findOne({ code });
+    if (existingItem) {
+      return res.status(400).json({ message: "El código ya existe en la base de datos" });
+    }
+
+    // Crear el nuevo item
+    const newItem = new Item({
+      code,
+      description,
+      composition,
+      barcode,
+      heading,
+      subheading,
+      proveedor,
+      salesUnit,
+      aliquot,
+      buyPrice,
+      discount1,
+      discount2,
+      discount3,
+      discount4,
+      discount5,
+      currency,
+      taxlessCost,
+      measure,
+      cost,
+      utility,
+      articleRanking,
+      enabled,
+      price1,
+      price2,
+      price3,
+      price4,
+      price5,
+    });
+
+    await newItem.save();
+
+    res.status(201).json({
+      message: "Item creado exitosamente",
+      item: newItem,
+    });
+  } catch (err) {
+    console.error("❌ Error en POST /items:", err);
     res.status(500).json({ message: "Error en el servidor" });
   }
 };

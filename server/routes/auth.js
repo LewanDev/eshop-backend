@@ -5,6 +5,7 @@ import {
   login,
   getProfile,
   putProfile,
+  postItem,
 } from "../controllers/auth.js";
 
 const router = express.Router();
@@ -20,5 +21,8 @@ router.get("/profile", verifyToken, getProfile);
 
 // PUT /api/auth/profile
 router.put("/profile", verifyToken, putProfile);
+
+// Crear un nuevo item
+router.post("/newItem", postItem);
 
 export default router;
