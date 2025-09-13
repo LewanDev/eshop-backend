@@ -1,16 +1,22 @@
 import express from "express";
 import verifyToken from "../middleware/verifyToken.js";
+
 import {
   register,
   login,
   getProfile,
   putProfile,
+} from "../controllers/users.js";
+
+import {
   postItem,
   getItems,
   getItemByCode,
   putItemByCode,
   deleteItemByCode,
-} from "../controllers/auth.js";
+} from "../controllers/items.js";
+
+import upload from "../middleware/upload.js";
 
 const router = express.Router();
 
@@ -27,7 +33,7 @@ router.get("/profile", verifyToken, getProfile);
 router.put("/profile", verifyToken, putProfile);
 
 // POST /api/auth/newItem
-router.post("/newItem", postItem);
+router.post("/newItem", upload.array("images"), postItem);
 
 // GET /api/auth/items
 router.get("/items", getItems);

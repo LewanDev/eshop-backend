@@ -3,8 +3,14 @@ import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
 import authRoutes from "./routes/auth.js";
+import path from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 
@@ -42,7 +48,7 @@ app.get("/", (req, res) => {
       <head>
         <title>Backend E-Shop</title>
         <style>
-          body { font-family: Arial; text-align:center; margin-top: 50px; background: #f5f5f5; }
+          body { font-family: Arial; text-align:center; margin-top: 50px; background: #e0e0e0ff; }
           .card { background: white; padding: 20px; border-radius: 12px; display: inline-block; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
           h1 { color: #333; }
           .status { font-size: 1.2rem; margin-top: 10px; }
@@ -58,6 +64,9 @@ app.get("/", (req, res) => {
     </html>
   `);
 });
+
+// Servir la carpeta uploads
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.listen(3000, () => console.log("Backend running on http://localhost:3000"));
 

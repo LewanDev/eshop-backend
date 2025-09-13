@@ -1,323 +1,163 @@
-import User from "../models/User.js";
-import Client from "../models/Client.js";
-import Item from "../models/Item.js";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
+// import User from "../models/User.js";
+// import Client from "../models/Client.js";
+// import Item from "../models/Item.js";
+// import bcrypt from "bcrypt";
+// import jwt from "jsonwebtoken";
 
-export const register = async (req, res) => {
-  try {
-    const { email, password } = req.body;
+// export const register = async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
 
-    // Verificar si el usuario ya existe
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: "El email ya está registrado" });
-    }
+//     // Verificar si el usuario ya existe
+//     const existingUser = await User.findOne({ email });
+//     if (existingUser) {
+//       return res.status(400).json({ message: "El email ya está registrado" });
+//     }
 
-    // Encriptar la contraseña
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+//     // Encriptar la contraseña
+//     const saltRounds = 10;
+//     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // Crear nuevo usuario
-    const newUser = new User({
-      email,
-      password: hashedPassword,
-    });
+//     // Crear nuevo usuario
+//     const newUser = new User({
+//       email,
+//       password: hashedPassword,
+//     });
 
-    const savedUser = await newUser.save();
+//     const savedUser = await newUser.save();
 
-    // Crear nuevo cliente
-    const newClient = new Client({
-      user: savedUser._id,
-      name: "",
-      dni: "",
-      address: "",
-      phone: "",
-    });
+//     // Crear nuevo cliente
+//     const newClient = new Client({
+//       user: savedUser._id,
+//       name: "",
+//       dni: "",
+//       address: "",
+//       phone: "",
+//     });
 
-    await newClient.save();
+//     await newClient.save();
 
-    // Actualizar usuario con referencia al cliente
-    savedUser.client = newClient._id;
-    await savedUser.save();
+//     // Actualizar usuario con referencia al cliente
+//     savedUser.client = newClient._id;
+//     await savedUser.save();
 
-    // Generar token
-    const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
-      expiresIn: "1d",
-    });
+//     // Generar token
+//     const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
+//       expiresIn: "1d",
+//     });
 
-    await savedUser.populate("client"); // 🔑
+//     await savedUser.populate("client"); // 🔑
 
-    res.status(201).json({
-      token,
-      message: "Usuario y cliente creados correctamente",
-      user: savedUser,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      error: error,
-      message: "Error al registrar usuario y cliente",
-    });
-  }
-};
+//     res.status(201).json({
+//       token,
+//       message: "Usuario y cliente creados correctamente",
+//       user: savedUser,
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({
+//       error: error,
+//       message: "Error al registrar usuario y cliente",
+//     });
+//   }
+// };
 
-//POST login
-export const login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
+// //POST login
+// export const login = async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
 
-    // validar credenciales
-    if (!email || !password) {
-      return res.status(400).json({ message: "Faltan credenciales" });
-    }
+//     // validar credenciales
+//     if (!email || !password) {
+//       return res.status(400).json({ message: "Faltan credenciales" });
+//     }
 
-    // buscar usuario
-    const user = await User.findOne({ email });
-    console.log("USUARIO DE LOGIN: " + user);
-    if (!user) {
-      return res.status(400).json({ message: "Usuario no encontrado" });
-    }
+//     // buscar usuario
+//     const user = await User.findOne({ email });
+//     console.log("USUARIO DE LOGIN: " + user);
+//     if (!user) {
+//       return res.status(400).json({ message: "Usuario no encontrado" });
+//     }
 
     
-    // comparar contraseñas
-    const isMatch = await bcrypt.compare(password, user.password);
+//     // comparar contraseñas
+//     const isMatch = await bcrypt.compare(password, user.password);
 
-    if (!isMatch) {
-      return res.status(400).json({ message: "Contraseña incorrecta" });
-    }
+//     if (!isMatch) {
+//       return res.status(400).json({ message: "Contraseña incorrecta" });
+//     }
 
-    // generar token con el id del usuario
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
+//     // generar token con el id del usuario
+//     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+//       expiresIn: "1h",
+//     });
 
-    await user.populate("client");
+//     await user.populate("client");
 
-    res.json({
-      message: "✅ Login exitoso",
-      user,
-      token,
-    });
-  } catch (error) {
-    console.error("❌ Error en /login:", error);
-    res.status(500).json({ message: "Error en el servidor" });
-  }
-};
+//     res.json({
+//       message: "✅ Login exitoso",
+//       user,
+//       token,
+//     });
+//   } catch (error) {
+//     console.error("❌ Error en /login:", error);
+//     res.status(500).json({ message: "Error en el servidor" });
+//   }
+// };
 
-//GET profile
-export const getProfile = async (req, res) => {
-  try {
-    const user = await User.findById(req.userId).populate("client");
-    console.log("getProfile() - User: " + user);
-    if (!user) {
-      return res.status(404).json({ message: "Usuario no encontrado" });
-    }
+// //GET profile
+// export const getProfile = async (req, res) => {
+//   try {
+//     const user = await User.findById(req.userId).populate("client");
+//     console.log("getProfile() - User: " + user);
+//     if (!user) {
+//       return res.status(404).json({ message: "Usuario no encontrado" });
+//     }
 
-    res.json({ user });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error cargando perfil" });
-  }
-};
+//     res.json({ user });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: "Error cargando perfil" });
+//   }
+// };
 
-//PUT profile
-export const putProfile = async (req, res) => {
-  try {
-    const { name, dni, address, phone } = req.body;
+// //PUT profile
+// export const putProfile = async (req, res) => {
+//   try {
+//     const { name, dni, address, phone } = req.body;
 
-    // Buscamos al cliente existente del usuario
-    let client = await Client.findOne({ user: req.userId });
+//     // Buscamos al cliente existente del usuario
+//     let client = await Client.findOne({ user: req.userId });
 
-    if (!client) {
-      // Si no existe, creamos uno
-      client = new Client({
-        user: req.userId,
-        name,
-        dni,
-        address,
-        phone,
-      });
-      await client.save();
-    } else {
-      // Si existe, solo actualizamos los campos
-      client.name = name ?? client.name;
-      client.dni = dni ?? client.dni;
-      client.address = address ?? client.address;
-      client.phone = phone ?? client.phone;
-      await client.save();
-    }
+//     if (!client) {
+//       // Si no existe, creamos uno
+//       client = new Client({
+//         user: req.userId,
+//         name,
+//         dni,
+//         address,
+//         phone,
+//       });
+//       await client.save();
+//     } else {
+//       // Si existe, solo actualizamos los campos
+//       client.name = name ?? client.name;
+//       client.dni = dni ?? client.dni;
+//       client.address = address ?? client.address;
+//       client.phone = phone ?? client.phone;
+//       await client.save();
+//     }
 
-    // Opcional: actualizar user si quieres permitir cambios en name/email
-    const user = await User.findById(req.userId).select("-password");
+//     // Opcional: actualizar user si quieres permitir cambios en name/email
+//     const user = await User.findById(req.userId).select("-password");
 
-    res.json({
-      message: "Perfil actualizado",
-      user: { ...user.toObject(), client },
-    });
-  } catch (err) {
-    console.error("❌ Error en PUT /profile:", err);
-    res.status(500).json({ message: "Error en el servidor" });
-  }
-};
+//     res.json({
+//       message: "Perfil actualizado",
+//       user: { ...user.toObject(), client },
+//     });
+//   } catch (err) {
+//     console.error("❌ Error en PUT /profile:", err);
+//     res.status(500).json({ message: "Error en el servidor" });
+//   }
+// };
 
-
-
-// POST - postItem
-export const postItem = async (req, res) => {
-  try {
-    const {
-      code,
-      description,
-      composition,
-      barcode,
-      heading,
-      subheading,
-      proveedor,
-      salesUnit,
-      aliquot,
-      buyPrice,
-      discount1,
-      discount2,
-      discount3,
-      discount4,
-      discount5,
-      currency,
-      taxlessCost,
-      measure,
-      cost,
-      utility,
-      articleRanking,
-      enabled,
-      price1,
-      price2,
-      price3,
-      price4,
-      price5,
-    } = req.body;
-
-    // Verificar que no exista ya un item con ese code
-    const existingItem = await Item.findOne({ code });
-    if (existingItem) {
-      return res.status(400).json({ message: "El código ya existe en la base de datos" });
-    }
-
-    // Crear el nuevo item
-    const newItem = new Item({
-      code,
-      description,
-      composition,
-      barcode,
-      heading,
-      subheading,
-      proveedor,
-      salesUnit,
-      aliquot,
-      buyPrice,
-      discount1,
-      discount2,
-      discount3,
-      discount4,
-      discount5,
-      currency,
-      taxlessCost,
-      measure,
-      cost,
-      utility,
-      articleRanking,
-      enabled,
-      price1,
-      price2,
-      price3,
-      price4,
-      price5,
-    });
-
-    await newItem.save();
-
-    res.status(201).json({
-      message: "Item creado exitosamente",
-      item: newItem,
-    });
-  } catch (err) {
-    console.error("❌ Error en POST /items:", err);
-    res.status(500).json({ message: "Error en el servidor" });
-  }
-};
-
-
-// GET - Traer todos los items
-export const getItems = async (req, res) => {
-  try {
-    const items = await Item.find(); // trae todos
-    res.json(items);
-  } catch (err) {
-    console.error("❌ Error en GET /items:", err);
-    res.status(500).json({ message: "Error en el servidor" });
-  }
-};
-
-// GET - Traer un item por código
-export const getItemByCode = async (req, res) => {
-  try {
-    const { code } = req.params;
-    const item = await Item.findOne({ code });
-
-    if (!item) {
-      return res.status(404).json({ message: "Item no encontrado" });
-    }
-
-    res.json(item);
-  } catch (err) {
-    console.error("❌ Error en GET /items/:code:", err);
-    res.status(500).json({ message: "Error en el servidor" });
-  }
-};
-
-// PUT - Editar un item existente por code
-export const putItemByCode = async (req, res) => {
-  try {
-    const { code } = req.params;
-    const updates = req.body; // los campos a actualizar
-
-    // Buscamos el item por code y lo actualizamos
-    const updatedItem = await Item.findOneAndUpdate(
-      { code },
-      { $set: updates },
-      { new: true } // retorna el item actualizado
-    );
-
-    if (!updatedItem) {
-      return res.status(404).json({ message: "Item no encontrado" });
-    }
-
-    res.json({
-      message: "Item actualizado correctamente",
-      item: updatedItem,
-    });
-  } catch (err) {
-    console.error("❌ Error en PUT /item/:code:", err);
-    res.status(500).json({ message: "Error en el servidor" });
-  }
-};
-
-// DELETE - Eliminar un item por code
-export const deleteItemByCode = async (req, res) => {
-  try {
-    const { code } = req.params;
-
-    const deletedItem = await Item.findOneAndDelete({ code });
-
-    if (!deletedItem) {
-      return res.status(404).json({ message: "Item no encontrado" });
-    }
-
-    res.json({
-      message: "Item eliminado correctamente",
-      item: deletedItem,
-    });
-  } catch (err) {
-    console.error("❌ Error en DELETE /item/:code:", err);
-    res.status(500).json({ message: "Error en el servidor" });
-  }
-};
