@@ -8,18 +8,18 @@ import {
   putProfile,
 } from "../controllers/users.js";
 
-const userRouter = express.Router();
+const router = express.Router();
 
 //POST Register
-userRouter.post("/register", register);
+router.post("/register", register);
 
 //POST Login
-userRouter.post("/login", login);
+router.post("/login", login);
 
 //GET /api/auth/profile
-userRouter.get("/profile", verifyToken, getProfile);
+router.get("/profile", verifyToken, getProfile);
 
 // PUT /api/auth/profile
-userRouter.put("/profile", verifyToken, putProfile);
+router.put("/profile", verifyToken, putProfile);
 
-export default userRouter;
+export default router;

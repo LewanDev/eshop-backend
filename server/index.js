@@ -7,6 +7,11 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
+import itemRoutes from "./routes/itemRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
+import headingRoutes from "./routes/headingRoutes.js";
+import subheadingRoutes from "./routes/subheadingRoutes.js";
+
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -42,7 +47,8 @@ app.use(express.json());
 
 // Rutas de prueba
 app.get("/", (req, res) => {
-  const dbStatus = mongoose.connection.readyState === 1 ? "🟢 Conectado" : "🔴 Desconectado";
+  const dbStatus =
+    mongoose.connection.readyState === 1 ? "🟢 Conectado" : "🔴 Desconectado";
   res.send(`
     <html>
       <head>
@@ -72,6 +78,10 @@ app.listen(3000, () => console.log("Backend running on http://localhost:3000"));
 
 // Rutas
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/items", itemRoutes);
+app.use("/api/headings", headingRoutes);
+app.use("/api/subheadings", subheadingRoutes);
 
 const PORT = process.env.PORT || 5000;
 

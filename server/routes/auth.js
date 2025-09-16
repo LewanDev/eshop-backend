@@ -16,6 +16,14 @@ import {
   deleteItemByCode,
 } from "../controllers/items.js";
 
+import {
+  createHeading,
+  getHeadings,
+  getHeadingById,
+  updateHeading,
+  deleteHeading,
+} from "../controllers/headingController.js";
+
 import upload from "../middleware/upload.js";
 
 const router = express.Router();
@@ -46,5 +54,15 @@ router.put("/item/:code", putItemByCode);
 
 // DELETE /api/auth/item/:code
 router.delete("/item/:code", deleteItemByCode);
+
+router.post("/heading", createHeading)
+
+router.get("/headings", getHeadings)
+
+router.get("/heading/:id", getHeadingById)
+
+router.put("/heading/:id", updateHeading)
+
+router.delete("/heading/:id", deleteHeading)
 
 export default router;

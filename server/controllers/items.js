@@ -1,22 +1,6 @@
 import Item from "../models/Item.js";
 import multer from "multer";
 
-
-// // Configuración de storage
-// const storage = multer.diskStorage({
-//   destination: (req, file, cb) => {
-//     cb(null, "server/uploads/"); // 👈 asegurate de que exista
-//   },
-//   filename: (req, file, cb) => {
-//     const uniqueSuffix = Date.now() + "-" + file.originalname;
-//     cb(null, uniqueSuffix);
-//   },
-// });
-
-// const upload = multer({ storage });
-
-// export default upload;
-
 // POST nuevo item
 export const postItem = async (req, res) => {
   try {
@@ -74,6 +58,7 @@ export const postItem = async (req, res) => {
       price1,
       currency,
       colorVariants,
+      measure,
     });
 
     await newItem.save();
@@ -157,5 +142,23 @@ export const deleteItemByCode = async (req, res) => {
   } catch (err) {
     console.error("❌ Error en DELETE /item/:code:", err);
     res.status(500).json({ message: "Error en el servidor" });
+  }
+};
+
+// POST - new Heading
+export const postHeading = async (req, res) => {
+  try {
+    const { code, description } = req.body;
+
+    const newHeader = new Heading({
+      code: code,
+      description: description,
+    });
+
+    await newHeader.save();
+    res.status(201).json(newHeader);
+  } catch (err) {
+    console.error("Error en POST /heading", err);
+    res.status(500).json({ message: "Error al crear el rubro" });
   }
 };
