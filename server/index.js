@@ -22,16 +22,37 @@ const app = express();
 // Configura CORS con una variable de entorno
 const allowedOrigins = [
   process.env.FRONTEND_URL || "http://localhost:5173", // Fallback para desarrollo local
-  "https://eshop-frontend-woad.vercel.app", // Dominio de producción
+  "https://eshop-frontend-woad.vercel.app",  /\.vercel\.app$/// Dominio de producción
 ];
 
 // Configura CORS para permitir el origen del frontend
+/*
 app.use(
   cors({
     origin: (origin, callback) => {
       // Permitir solicitudes sin origen (como Postman) o desde orígenes permitidos
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, origin); // Devolver el origen exacto en lugar de '*'
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+*/
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (
+        !origin || 
+        allowedOrigins.some((allowed) =>
+          allowed instanceof RegExp ? allowed.test(origin) : allowed === origin
+        )
+      ) {
+        callback(null, origin);
       } else {
         callback(new Error("Not allowed by CORS"));
       }
