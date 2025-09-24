@@ -51,6 +51,9 @@ export const postItem = async (req, res) => {
       });
     }
 
+    // Imágenes generales (todas las que no son de variantes)
+    const generalImages = req.files?.map((file) => `/uploads/${file.filename}`) || [];
+
     const newItem = new Item({
       code,
       name,
@@ -59,6 +62,7 @@ export const postItem = async (req, res) => {
       currency,
       colorVariants,
       measure,
+      images: generalImages, 
     });
 
     await newItem.save();
@@ -162,3 +166,46 @@ export const postHeading = async (req, res) => {
     res.status(500).json({ message: "Error al crear el rubro" });
   }
 };
+
+// POST - Agregar imágenes adicionales a un item por code
+export const addImagesToItem = async (req, res) => {
+  try {
+    const { code } = req.params;
+
+    // Parsear array de imágenes que pueden venir en el body
+    let images = [];
+    if (req.body.images) {
+      images = JSON.parse(req.body.images);
+    }
+
+    // Si vienen archivos, los agregamos también
+    if (req.files && req.files.length > 0) {
+      req.files.forEach((file) => {
+        images.push({
+          imageUrl: `/uploads/${file.filename}`,
+          altText: file.originalname,
+        });
+      });
+    }
+
+    // Actualizamos el item agregando al array existente
+    const updatedItem = await Item.findOneAndUpdate(
+      { code },
+      { $push: { images: { $each: images } } },
+      { new: true }
+    );
+
+    if (!updatedItem) {
+      return res.status(404).json({ message: "Item no encontrado" });
+    }
+
+    res.json({
+      message: "Imágenes agregadas correctamente",
+      item: updatedItem,
+    });
+  } catch (err) {
+    console.error("❌ Error en POST /items/:code/images:", err);
+    res.status(500).json({ message: "Error al agregar imágenes" });
+  }
+};
+

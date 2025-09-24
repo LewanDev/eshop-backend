@@ -16,6 +16,25 @@ const colorVariantSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const imageSchema = new mongoose.Schema(
+  {
+    imageUrl: {
+      type: String, // si el usuario pega un link
+    },
+    imageFile: {
+      type: String, // ruta/filename si sube archivo local
+    },
+    altText: {
+      type: String, // opcional: texto alternativo
+    },
+    order: {
+      type: Number, // opcional: orden de la imagen en el carrusel
+      default: 0,
+    },
+  },
+  { _id: false }
+);
+
 const itemSchema = new mongoose.Schema(
   {
     code: {
@@ -50,7 +69,13 @@ const itemSchema = new mongoose.Schema(
     price3: { type: Number, default: 0 },
     price4: { type: Number, default: 0 },
     price5: { type: Number, default: 0 },
+
+    // Variantes de color
     colorVariants: [colorVariantSchema],
+
+
+    // 👇 acá va la corrección:
+    images: [{ type: String }],
   },
   { timestamps: true }
 );

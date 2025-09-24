@@ -6,7 +6,7 @@ import {
   login,
   getProfile,
   putProfile,
-} from "../controllers/users.js";
+} from "../controllers/userController.js";
 
 import {
   postItem,
@@ -14,7 +14,7 @@ import {
   getItemByCode,
   putItemByCode,
   deleteItemByCode,
-} from "../controllers/items.js";
+} from "../controllers/itemController.js";
 
 import {
   createHeading,
