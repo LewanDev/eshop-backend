@@ -11,6 +11,7 @@ import itemRoutes from "./routes/itemRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import headingRoutes from "./routes/headingRoutes.js";
 import subheadingRoutes from "./routes/subheadingRoutes.js";
+import configRoutes from "./routes/configRoutes.js"
 
 dotenv.config();
 
@@ -95,7 +96,7 @@ app.get("/", (req, res) => {
 // Servir la carpeta uploads
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-app.listen(3000, () => console.log("Backend running on http://localhost:3000"));
+app.listen(3000, () => console.log("Backend running..."));
 
 // Rutas
 app.use("/api/auth", authRoutes);
@@ -103,6 +104,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/items", itemRoutes);
 app.use("/api/headings", headingRoutes);
 app.use("/api/subheadings", subheadingRoutes);
+app.use("/api/config", configRoutes);
 
 const PORT = process.env.PORT || 5000;
 
