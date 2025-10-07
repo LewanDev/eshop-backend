@@ -1,19 +1,22 @@
+
+import dotenv from "dotenv";
+dotenv.config();
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
-import dotenv from "dotenv";
-import authRoutes from "./routes/auth.js";
+
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
+import authRoutes from "./routes/auth.js";
 import itemRoutes from "./routes/itemRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import headingRoutes from "./routes/headingRoutes.js";
 import subheadingRoutes from "./routes/subheadingRoutes.js";
 import configRoutes from "./routes/configRoutes.js"
+import orderRoutes from "./routes/orderRoutes.js"
 
-dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -26,24 +29,6 @@ const allowedOrigins = [
   "https://eshop-frontend-woad.vercel.app",  /\.vercel\.app$/// Dominio de producción
 ];
 
-// Configura CORS para permitir el origen del frontend
-/*
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Permitir solicitudes sin origen (como Postman) o desde orígenes permitidos
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, origin); // Devolver el origen exacto en lugar de '*'
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
-*/
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -105,6 +90,7 @@ app.use("/api/items", itemRoutes);
 app.use("/api/headings", headingRoutes);
 app.use("/api/subheadings", subheadingRoutes);
 app.use("/api/config", configRoutes);
+app.use("/api/order", orderRoutes);
 
 const PORT = process.env.PORT || 5000;
 
