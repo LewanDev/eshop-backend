@@ -1,10 +1,9 @@
 import express from "express";
 import nodemailer from "nodemailer";
+import Config from "../models/Config.js";
 
 const router = express.Router();
 
-// Config de los correos
-const ADMIN_EMAILS = ["nawemarchelli@gmail.com", "nmarchelli@outlook.com"];
 
 router.post("/", async (req, res) => {
   try {
@@ -16,11 +15,22 @@ router.post("/", async (req, res) => {
       },
     });
 
-    const { fecha, usuario, items } = req.body;
+    // Obtener configuración de la DB
+    const config = await Config.findOne();
+    if (!config || !config.emails?.length) {
+      return res.status(500).json({
+        success: false,
+        error:
+          "No se encontraron direcciones de correo configuradas en la base de datos",
+      });
+    }
 
+    const { fecha, usuario, items } = req.body;
     const total = items.reduce((acc, i) => acc + i.precio * i.cantidad, 0);
+
     console.log("EMAIL_USER:", process.env.EMAIL_USER);
     console.log("EMAIL_PASS:", process.env.EMAIL_PASS ? "Cargada" : "VACÍA");
+    console.log("Correos destino:", config.emails);
 
     const html = `
   <div style="font-family: 'Segoe UI', Roboto, sans-serif; background-color: #f6f7fb; padding: 30px;">
@@ -104,7 +114,7 @@ router.post("/", async (req, res) => {
 
     await transporter.sendMail({
       from: `"e-Shop Deluxe" <${process.env.EMAIL_USER}>`,
-      to: ADMIN_EMAILS.join(", "),
+      to: config.emails.join(", "),
       cc: usuario.email,
       subject: "Nuevo pedido confirmado",
       html,
