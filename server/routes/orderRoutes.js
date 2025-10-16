@@ -1,9 +1,9 @@
 import express from "express";
 import nodemailer from "nodemailer";
 import Config from "../models/Config.js";
+import ExcelJS from "exceljs";
 
 const router = express.Router();
-
 
 router.post("/", async (req, res) => {
   try {
@@ -28,9 +28,50 @@ router.post("/", async (req, res) => {
     const { fecha, usuario, items } = req.body;
     const total = items.reduce((acc, i) => acc + i.precio * i.cantidad, 0);
 
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Pedido");
+
     console.log("EMAIL_USER:", process.env.EMAIL_USER);
     console.log("EMAIL_PASS:", process.env.EMAIL_PASS ? "Cargada" : "VACÍA");
     console.log("Correos destino:", config.emails);
+
+    // Encabezado del pedido
+    sheet.addRow(["Fecha del pedido", fecha]);
+    sheet.addRow(["Cliente", usuario.nombre]);
+    sheet.addRow(["Email", usuario.email]);
+    sheet.addRow(["Teléfono", usuario.telefono]);
+    sheet.addRow([]);
+    sheet.addRow(["Detalle del pedido"]);
+    sheet.addRow([
+      "ID",
+      "Producto",
+      "Color",
+      "Cantidad",
+      "Precio Unitario",
+      "Subtotal",
+    ]);
+
+    // Filas de los items
+    items.forEach((i) => {
+      sheet.addRow([
+        i.id,
+        i.nombre,
+        i.color,
+        i.cantidad,
+        i.precio,
+        i.cantidad * i.precio,
+      ]);
+    });
+
+    sheet.addRow([]);
+    sheet.addRow(["", "", "", "", "TOTAL", total]);
+
+    // Estilo básico
+    sheet.columns.forEach((col) => (col.width = 20));
+    sheet.getRow(7).font = { bold: true }; // encabezado
+
+    // Convertir a buffer en memoria
+    const buffer = await workbook.xlsx.writeBuffer();
 
     const html = `
   <div style="font-family: 'Segoe UI', Roboto, sans-serif; background-color: #f6f7fb; padding: 30px;">
@@ -112,17 +153,28 @@ router.post("/", async (req, res) => {
   </div>
 `;
 
+    // === 📎 Envío del correo con adjunto XLSX ===
     await transporter.sendMail({
       from: `"e-Shop Deluxe" <${process.env.EMAIL_USER}>`,
       to: config.emails.join(", "),
       cc: usuario.email,
       subject: "Nuevo pedido confirmado",
       html,
+      attachments: [
+        {
+          filename: `Pedido_${fecha.replace(/[/: ]/g, "_")}.xlsx`,
+          content: buffer,
+          contentType:
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        },
+      ],
     });
 
-    res.status(200).json({ success: true, message: "Pedido enviado" });
+    res
+      .status(200)
+      .json({ success: true, message: "Pedido enviado con adjunto XLSX" });
   } catch (err) {
-    console.error(err);
+    console.error("❌ Error al enviar pedido:", err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
