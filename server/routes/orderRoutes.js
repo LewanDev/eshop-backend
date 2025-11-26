@@ -15,12 +15,12 @@ router.post("/", async (req, res) => {
     //   },
     // });
     const transporter = nodemailer.createTransport({
-      host: "smtp-relay.brevo.com",
-      port: 587,
-      secure: false,
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
+      secure: false, // Usar true si elegís puerto 465
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
       },
     });
 
@@ -40,8 +40,8 @@ router.post("/", async (req, res) => {
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet("Pedido");
 
-    console.log("EMAIL_USER:", process.env.EMAIL_USER);
-    console.log("EMAIL_PASS:", process.env.EMAIL_PASS ? "Cargada" : "VACÍA");
+    console.log("EMAIL_USER:", process.env.SMTP_USER);
+    console.log("EMAIL_PASS:", process.env.SMTP_PASS ? "Cargada" : "VACÍA");
     console.log("Correos destino:", config.emails);
 
     // Encabezado del pedido
@@ -164,7 +164,7 @@ router.post("/", async (req, res) => {
 
     // === 📎 Envío del correo con adjunto XLSX ===
     await transporter.sendMail({
-      from: `"e-Shop Deluxe" <${process.env.EMAIL_USER}>`,
+      from: `"e-Shop Deluxe" <${process.env.SMTP_FROM}>`,
       to: config.emails.join(", "),
       cc: usuario.email,
       subject: "Nuevo pedido confirmado",
