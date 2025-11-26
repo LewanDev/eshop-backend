@@ -1,19 +1,130 @@
 import express from "express";
-import nodemailer from "nodemailer";
 import Config from "../models/Config.js";
 import ExcelJS from "exceljs";
+import { Resend } from "resend";
 
 const router = express.Router();
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 router.post("/", async (req, res) => {
   try {
-    // const transporter = nodemailer.createTransport({
-    //   service: "gmail",
-    //   auth: {
-    //     user: process.env.EMAIL_USER, // correo emisor
-    //     pass: process.env.EMAIL_PASS, // contraseña o app password
-    //   },
-    // });
+    // Obtener configuración de la DB
+    const config = await Config.findOne();
+    if (!config || !config.emails?.length) {
+      return res.status(500).json({
+        success: false,
+        error: "No se encontraron direcciones de correo configuradas en la base de datos",
+      });
+    }
+
+    const { fecha, usuario, items } = req.body;
+    const total = items.reduce((acc, i) => acc + i.precio * i.cantidad, 0);
+
+    // === 🧾 Generar Excel en memoria ===
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Pedido");
+
+    sheet.addRow(["Fecha del pedido", fecha]);
+    sheet.addRow(["Cliente", usuario.nombre]);
+    sheet.addRow(["Email", usuario.email]);
+    sheet.addRow(["Teléfono", usuario.telefono]);
+    sheet.addRow([]);
+    sheet.addRow(["Detalle del pedido"]);
+    sheet.addRow(["ID", "Producto", "Color", "Cantidad", "Precio Unitario", "Subtotal"]);
+
+    items.forEach((i) => {
+      sheet.addRow([
+        i.id,
+        i.nombre,
+        i.color,
+        i.cantidad,
+        i.precio,
+        i.cantidad * i.precio,
+      ]);
+    });
+
+    sheet.addRow([]);
+    sheet.addRow(["", "", "", "", "TOTAL", total]);
+    sheet.columns.forEach((col) => (col.width = 20));
+    sheet.getRow(7).font = { bold: true };
+
+    // Convertir el XLSX a buffer
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    // === 📧 Template HTML ===
+    const html = `
+      <div style="font-family: 'Segoe UI', Roboto, sans-serif;">
+        <h2>Nuevo pedido recibido</h2>
+        <p><b>Cliente:</b> ${usuario.nombre}</p>
+        <p><b>Email:</b> ${usuario.email}</p>
+        <p><b>Teléfono:</b> ${usuario.telefono}</p>
+        <p><b>Fecha:</b> ${fecha}</p>
+        <br/>
+        <h3>Detalle del pedido</h3>
+        <ul>
+          ${items
+            .map(
+              (i) => `<li>${i.nombre} (${i.color}) — x${i.cantidad} — $${i.precio}</li>`
+            )
+            .join("")}
+        </ul>
+        <p><b>Total:</b> $${total.toLocaleString("es-AR")}</p>
+      </div>
+    `;
+
+    // === 🚀 Enviar con Resend ===
+    const emailResponse = await resend.emails.send({
+      from: process.env.RESEND_FROM,
+      to: config.emails,
+      cc: usuario.email,
+      subject: "Nuevo pedido confirmado",
+      html,
+      attachments: [
+        {
+          filename: `Pedido_${fecha.replace(/[/: ]/g, "_")}.xlsx`,
+          content: buffer.toString("base64"),
+        },
+      ],
+    });
+
+    if (emailResponse.error) {
+      console.error("❌ Error Resend:", emailResponse.error);
+      return res.status(500).json({ success: false, error: emailResponse.error.message });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Pedido enviado correctamente con XLSX",
+    });
+
+  } catch (err) {
+    console.error("❌ Error al enviar pedido:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+export default router;
+
+
+
+
+
+/*
+
+import express from "express";
+import nodemailer from "nodemailer";
+import Config from "../models/Config.js";
+import ExcelJS from "exceljs";
+import { Resend } from "resend";
+import fs from "fs";
+import path from "path";
+
+const router = express.Router();
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+router.post("/", async (req, res) => {
+  try {
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: process.env.SMTP_PORT,
@@ -189,3 +300,4 @@ router.post("/", async (req, res) => {
 });
 
 export default router;
+*/
