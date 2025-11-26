@@ -81,7 +81,7 @@ app.get("/", (req, res) => {
 // Servir la carpeta uploads
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-app.listen(3000, () => console.log("Backend running..."));
+//app.listen(3000, () => console.log("Backend running..."));
 
 // Rutas
 app.use("/api/auth", authRoutes);
