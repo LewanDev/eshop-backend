@@ -1,4 +1,3 @@
-
 import dotenv from "dotenv";
 dotenv.config();
 import express from "express";
@@ -14,9 +13,8 @@ import itemRoutes from "./routes/itemRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import headingRoutes from "./routes/headingRoutes.js";
 import subheadingRoutes from "./routes/subheadingRoutes.js";
-import configRoutes from "./routes/configRoutes.js"
-import orderRoutes from "./routes/orderRoutes.js"
-
+import configRoutes from "./routes/configRoutes.js";
+import orderRoutes from "./routes/orderRoutes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -26,14 +24,15 @@ const app = express();
 // Configura CORS con una variable de entorno
 const allowedOrigins = [
   process.env.FRONTEND_URL || "http://localhost:5173", // Fallback para desarrollo local
-  "https://eshop-frontend-woad.vercel.app",  /\.vercel\.app$/// Dominio de producción
+  "https://eshop-frontend-woad.vercel.app",
+  /\.vercel\.app$/, // Dominio de producción
 ];
 
 app.use(
   cors({
     origin: (origin, callback) => {
       if (
-        !origin || 
+        !origin ||
         allowedOrigins.some((allowed) =>
           allowed instanceof RegExp ? allowed.test(origin) : allowed === origin
         )
@@ -101,7 +100,10 @@ mongoose
     useUnifiedTopology: true,
   })
   .then(() => {
-    console.log("****** ✅ Connected to MongoDB ******");
+    console.log("****** ✅ Backend running OK ******");
+    console.log("****** In port: " + PORT + " ******");
     app.listen(PORT, () => console.log(`Server online`));
   })
-  .catch((err) => console.error("***** ❌ Error when connecting MongoDB ***** - ", err));
+  .catch((err) =>
+    console.error("***** ❌ Error when connecting MongoDB ***** - ", err)
+  );
