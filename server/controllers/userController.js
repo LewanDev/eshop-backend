@@ -78,7 +78,6 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Usuario no encontrado" });
     }
 
-    
     // comparar contraseñas
     const isMatch = await bcrypt.compare(password, user.password);
 
@@ -159,4 +158,3 @@ export const putProfile = async (req, res) => {
     res.status(500).json({ message: "Error en el servidor" });
   }
 };
-

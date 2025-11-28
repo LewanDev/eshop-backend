@@ -1,303 +1,116 @@
 import express from "express";
-import Config from "../models/Config.js";
 import ExcelJS from "exceljs";
-import { Resend } from "resend";
+import Order from "../models/Order.js";
+import Client from "../models/Client.js";
+import { getNextOrderNumber } from "../models/Counter.js";
 
 const router = express.Router();
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 router.post("/", async (req, res) => {
   try {
-    // Obtener configuración de la DB
-    const config = await Config.findOne();
-    if (!config || !config.emails?.length) {
-      return res.status(500).json({
+    const { cliente, items } = req.body;
+
+    // Buscar cliente en MongoDB
+    const clientDB = await Client.findById(cliente);
+
+    if (!clientDB) {
+      return res.status(400).json({
         success: false,
-        error: "No se encontraron direcciones de correo configuradas en la base de datos",
+        error: "Cliente no encontrado",
       });
     }
 
-    const { fecha, usuario, items } = req.body;
     const total = items.reduce((acc, i) => acc + i.precio * i.cantidad, 0);
+    const orderNumber = await getNextOrderNumber();
 
-    // === 🧾 Generar Excel en memoria ===
+    // === Crear Excel ===
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet("Pedido");
 
-    sheet.addRow(["Fecha del pedido", fecha]);
-    sheet.addRow(["Cliente", usuario.nombre]);
-    sheet.addRow(["Email", usuario.email]);
-    sheet.addRow(["Teléfono", usuario.telefono]);
+    sheet.addRow(["Cliente", clientDB.name]);
+    sheet.addRow(["Teléfono", clientDB.phone]);
     sheet.addRow([]);
-    sheet.addRow(["Detalle del pedido"]);
-    sheet.addRow(["ID", "Producto", "Color", "Cantidad", "Precio Unitario", "Subtotal"]);
+    sheet.addRow(["ID", "Color", "Cantidad", "Precio", "Subtotal"]);
 
     items.forEach((i) => {
       sheet.addRow([
-        i.id,
-        i.nombre,
+        i.itemId,
         i.color,
         i.cantidad,
         i.precio,
-        i.cantidad * i.precio,
+        i.precio * i.cantidad,
       ]);
     });
 
     sheet.addRow([]);
-    sheet.addRow(["", "", "", "", "TOTAL", total]);
-    sheet.columns.forEach((col) => (col.width = 20));
-    sheet.getRow(7).font = { bold: true };
+    sheet.addRow(["", "", "", "Total", total]);
 
-    // Convertir el XLSX a buffer
     const buffer = await workbook.xlsx.writeBuffer();
+    console.log("items recibidos:", items);
 
-    // === 📧 Template HTML ===
-    const html = `
-      <div style="font-family: 'Segoe UI', Roboto, sans-serif;">
-        <h2>Nuevo pedido recibido</h2>
-        <p><b>Cliente:</b> ${usuario.nombre}</p>
-        <p><b>Email:</b> ${usuario.email}</p>
-        <p><b>Teléfono:</b> ${usuario.telefono}</p>
-        <p><b>Fecha:</b> ${fecha}</p>
-        <br/>
-        <h3>Detalle del pedido</h3>
-        <ul>
-          ${items
-            .map(
-              (i) => `<li>${i.nombre} (${i.color}) — x${i.cantidad} — $${i.precio}</li>`
-            )
-            .join("")}
-        </ul>
-        <p><b>Total:</b> $${total.toLocaleString("es-AR")}</p>
-      </div>
-    `;
-
-    // === 🚀 Enviar con Resend ===
-    const emailResponse = await resend.emails.send({
-      from: process.env.RESEND_FROM,
-      to: config.emails,
-      cc: usuario.email,
-      subject: "Nuevo pedido confirmado",
-      html,
-      attachments: [
-        {
-          filename: `Pedido_${fecha.replace(/[/: ]/g, "_")}.xlsx`,
-          content: buffer.toString("base64"),
-        },
-      ],
+    const newOrder = new Order({
+      orderNumber,
+      fecha: new Date().toLocaleString(),
+      cliente: clientDB._id,
+      cantidadArticulos: items.length,
+      items: items.map((i) => ({
+        itemId: i.itemId,
+        color: i.color,
+        cantidad: i.cantidad,
+        precio: i.precio,
+      })),
+      total,
+      excelFile: buffer,
     });
 
-    if (emailResponse.error) {
-      console.error("❌ Error Resend:", emailResponse.error);
-      return res.status(500).json({ success: false, error: emailResponse.error.message });
-    }
+    await newOrder.save();
 
     res.status(200).json({
       success: true,
-      message: "Pedido enviado correctamente con XLSX",
+      message: "Pedido guardado correctamente",
+      orderNumber,
     });
-
   } catch (err) {
-    console.error("❌ Error al enviar pedido:", err);
+    console.error("Error al guardar pedido:", err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-export default router;
-
-
-
-
-
-/*
-
-import express from "express";
-import nodemailer from "nodemailer";
-import Config from "../models/Config.js";
-import ExcelJS from "exceljs";
-import { Resend } from "resend";
-import fs from "fs";
-import path from "path";
-
-const router = express.Router();
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-router.post("/", async (req, res) => {
+// 📌 Obtener todos los pedidos
+router.get("/", async (req, res) => {
   try {
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      secure: false, // Usar true si elegís puerto 465
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
+    const orders = await Order.find()
+      .populate("cliente", "name dni phone") // trae datos del cliente
+      .populate("items.itemId", "name code") // trae datos del producto
+      .sort({ orderNumber: -1 }); // últimos pedidos primero
 
-    // Obtener configuración de la DB
-    const config = await Config.findOne();
-    if (!config || !config.emails?.length) {
-      return res.status(500).json({
-        success: false,
-        error:
-          "No se encontraron direcciones de correo configuradas en la base de datos",
-      });
+    res.json({ success: true, orders });
+  } catch (err) {
+    console.error("Error al obtener pedidos:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ➤ Descargar XLS por ID
+router.get("/:id/xls", async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+
+    if (!order || !order.excelFile) {
+      return res.status(404).json({ error: "Archivo no encontrado" });
     }
 
-    const { fecha, usuario, items } = req.body;
-    const total = items.reduce((acc, i) => acc + i.precio * i.cantidad, 0);
-
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet("Pedido");
-
-    console.log("EMAIL_USER:", process.env.SMTP_USER);
-    console.log("EMAIL_PASS:", process.env.SMTP_PASS ? "Cargada" : "VACÍA");
-    console.log("Correos destino:", config.emails);
-
-    // Encabezado del pedido
-    sheet.addRow(["Fecha del pedido", fecha]);
-    sheet.addRow(["Cliente", usuario.nombre]);
-    sheet.addRow(["Email", usuario.email]);
-    sheet.addRow(["Teléfono", usuario.telefono]);
-    sheet.addRow([]);
-    sheet.addRow(["Detalle del pedido"]);
-    sheet.addRow([
-      "ID",
-      "Producto",
-      "Color",
-      "Cantidad",
-      "Precio Unitario",
-      "Subtotal",
-    ]);
-
-    // Filas de los items
-    items.forEach((i) => {
-      sheet.addRow([
-        i.id,
-        i.nombre,
-        i.color,
-        i.cantidad,
-        i.precio,
-        i.cantidad * i.precio,
-      ]);
+    res.set({
+      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": `attachment; filename=Pedido_${order.orderNumber}.xlsx`,
     });
 
-    sheet.addRow([]);
-    sheet.addRow(["", "", "", "", "TOTAL", total]);
-
-    // Estilo básico
-    sheet.columns.forEach((col) => (col.width = 20));
-    sheet.getRow(7).font = { bold: true }; // encabezado
-
-    // Convertir a buffer en memoria
-    const buffer = await workbook.xlsx.writeBuffer();
-
-    const html = `
-  <div style="font-family: 'Segoe UI', Roboto, sans-serif; background-color: #f6f7fb; padding: 30px;">
-    <div style="max-width: 650px; margin: 0 auto; background-color: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 5px 25px rgba(0,0,0,0.1);">
-      <div style="background-color: #111827; color: #fff; padding: 25px 35px; text-align: center;">
-        <h1 style="margin: 0; font-size: 24px; letter-spacing: 0.5px;">e-Shop Deluxe</h1>
-        <p style="margin-top: 8px; font-size: 15px;">Confirmación de tu pedido</p>
-      </div>
-
-      <div style="padding: 25px 35px;">
-        <h2 style="color: #111827; margin-bottom: 12px;">¡Gracias por tu compra, ${
-          // usuario.nombre.split(" ")[0]
-          usuario.nombre
-        }!</h2>
-        <p style="margin-top: 0; color: #555; font-size: 15px;">
-          Recibimos tu pedido el <b>${fecha}</b>. A continuación te dejamos los detalles 👇
-        </p>
-
-        <div style="margin-top: 25px; background-color: #f9fafb; padding: 15px 20px; border-radius: 8px;">
-          <h3 style="margin-top: 0; color: #111827;">🧾 Datos del comprador</h3>
-          <p style="margin: 6px 0;"><b>Nombre:</b> ${usuario.nombre}</p>
-          <p style="margin: 6px 0;"><b>Email:</b> ${usuario.email}</p>
-          <p style="margin: 6px 0;"><b>Teléfono:</b> ${usuario.telefono}</p>
-        </div>
-
-        <div style="margin-top: 25px;">
-          <h3 style="color: #111827;">🛒 Detalle del pedido</h3>
-          <div style="border-collapse: collapse; width: 100%; margin-top: 10px;">
-            ${items
-              .map(
-                (i) => `
-                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e7eb; padding: 10px 0;">
-                  <div style="flex: 1;">
-                    <p style="margin: 0; font-weight: 500; color: #111827;">${
-                      i.nombre
-                    }</p>
-                    <p style="margin: 0; font-size: 13px; color: #6b7280;">Color: ${
-                      i.color
-                    }</p>
-                    <p style="margin: 0; font-size: 13px; color: #6b7280;">ID: ${
-                      i.id
-                    }</p>
-                  </div>
-                  <div style="text-align: right;">
-                    <p style="margin: 0; color: #111827;">x${i.cantidad}</p>
-                    <p style="margin: 0; font-weight: bold; color: #111827;">$${i.precio.toLocaleString(
-                      "es-AR"
-                    )}</p>
-                  </div>
-                </div>`
-              )
-              .join("")}
-          </div>
-
-          <div style="margin-top: 20px; text-align: right;">
-            <p style="margin: 0; font-size: 16px; color: #111827;">
-              <b>Total:</b> $${items
-                .reduce((acc, i) => acc + i.precio * i.cantidad, 0)
-                .toLocaleString("es-AR")}
-            </p>
-          </div>
-        </div>
-
-        <div style="margin-top: 30px; text-align: center;">
-          <p style="color: #6b7280; font-size: 13px; line-height: 1.4;">
-            e-Shop Deluxe<br/>
-            Buenos Aires, Argentina<br/>
-            <a href="https://eshop-frontend-woad.vercel.app/" style="color: #2563eb; text-decoration: none;">e-Shop Deluxe</a>
-          </p>
-        </div>
-      </div>
-
-      <div style="background-color: #111827; color: #fff; text-align: center; padding: 12px;">
-        <p style="margin: 0; font-size: 13px;">
-          © ${new Date().getFullYear()} e-Shop Deluxe — Todos los derechos reservados.
-        </p>
-      </div>
-    </div>
-  </div>
-`;
-
-    // === 📎 Envío del correo con adjunto XLSX ===
-    await transporter.sendMail({
-      from: `"e-Shop Deluxe" <${process.env.SMTP_FROM}>`,
-      to: config.emails.join(", "),
-      cc: usuario.email,
-      subject: "Nuevo pedido confirmado",
-      html,
-      attachments: [
-        {
-          filename: `Pedido_${fecha.replace(/[/: ]/g, "_")}.xlsx`,
-          content: buffer,
-          contentType:
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        },
-      ],
-    });
-
-    res
-      .status(200)
-      .json({ success: true, message: "Pedido enviado con adjunto XLSX" });
+    return res.send(order.excelFile);
   } catch (err) {
-    console.error("❌ Error al enviar pedido:", err);
-    res.status(500).json({ success: false, error: err.message });
+    console.error("❌ Error al descargar XLS:", err);
+    return res.status(500).json({ error: "Error al descargar archivo" });
   }
 });
 
+
 export default router;
-*/
